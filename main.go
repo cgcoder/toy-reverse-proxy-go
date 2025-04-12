@@ -17,6 +17,8 @@ type Route struct {
 func parseRoutes(filename string) ([]Route, error) {
 	file, err := os.Open(filename)
 	if err != nil {
+		fmt.Println("Error opening file: ", err)
+		os.Exit(1)
 		return nil, err
 	}
 	defer file.Close()
@@ -32,24 +34,56 @@ func parseRoutes(filename string) ([]Route, error) {
 
 func main() {
 
-	routes, err := parseRoutes("C:\\Users\\gopi\\code\\github\\toy-reverse-proxy-go\\routes.json")
+	if len(os.Args) < 2 {
+		fmt.Println("Please provide the route json file as an argument.")
+		os.Exit(1)
+	}
+
+	routeFile := os.Args[1]
+	routes, err := parseRoutes(routeFile)
 	if err != nil {
 		fmt.Println("Error parsing routes:", err)
 		return
 	}
 	fmt.Println("Parsed routes:", routes)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Define the backend server URL
-		backendURL := "http://localhost:5173"
-		path := r.URL.Path
-		// Strip the "/console" prefix from the URL path
-		if len(path) >= 8 && path[:8] == "/console" {
-			path = path[8:]
+	http.HandleFunc("/", getHandler(routes))
+
+	// Start the proxy server
+	fmt.Println("Starting proxy server on :8080")
+	http.ListenAndServe(":8080", nil)
+}
+
+type RouteOutput struct {
+	Path      string
+	ServerUrl string
+}
+
+func getRouteOutput(routes []Route, path string) (RouteOutput, bool) {
+	for _, route := range routes {
+		if len(path) >= len(route.UrlStartsWith) && path[:len(route.UrlStartsWith)] == route.UrlStartsWith {
+			path = path[len(route.UrlStartsWith):]
+			return RouteOutput{Path: path, ServerUrl: route.RedirectHost}, true
 		}
+	}
+
+	return RouteOutput{}, false
+}
+
+func getHandler(routes []Route) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Define the backend server URL
+		// Strip the "/console" prefix from the URL path
+		routeOutput, found := getRouteOutput(routes, r.URL.Path)
+		path := r.URL.Path
+		if found {
+			fmt.Println("Forwarding request to backend server:", routeOutput.ServerUrl+routeOutput.Path)
+			path = routeOutput.ServerUrl + routeOutput.Path
+		}
+
 		// Create a new request to the backend server
-		fmt.Println("Forwarding request to backend server:", backendURL+path)
-		req, err := http.NewRequest(r.Method, backendURL+path, r.Body)
+
+		req, err := http.NewRequest(r.Method, path, r.Body)
 		if err != nil {
 			http.Error(w, "Failed to create request", http.StatusInternalServerError)
 			return
@@ -79,9 +113,5 @@ func main() {
 		}
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
-	})
-
-	// Start the proxy server
-	fmt.Println("Starting proxy server on :8080")
-	http.ListenAndServe(":8080", nil)
+	}
 }
