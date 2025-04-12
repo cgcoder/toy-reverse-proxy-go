@@ -1,0 +1,12 @@
+[
+    {
+        "urlStartsWith": "/console",
+        "redirectHost": "http://localhost:5173",
+        "stripUrlPrefix": "/console"
+    },
+    {
+        "urlStartsWith": "/api",
+        "redirectHost": "http://localhost:5174",
+        "stripUrlPrefix": "/api"
+    }
+]
