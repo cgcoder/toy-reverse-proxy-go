@@ -9,9 +9,8 @@ import (
 )
 
 type Route struct {
-	UrlStartsWith  string `json:"urlStartsWith"`
-	RedirectHost   string `json:"redirectHost"`
-	StripUrlPrefix string `json:"stripUrlPrefix"`
+	UrlStartsWith string `json:"urlStartsWith"`
+	RedirectHost  string `json:"redirectHost"`
 }
 
 func parseRoutes(filename string) ([]Route, error) {
@@ -40,6 +39,15 @@ func main() {
 	}
 
 	routeFile := os.Args[1]
+	port := 8080
+	if len(os.Args) > 2 {
+		_, err := fmt.Sscanf(os.Args[2], "%d", &port)
+		if err != nil {
+			fmt.Println("Invalid port number:", os.Args[2])
+			os.Exit(1)
+		}
+	}
+
 	routes, err := parseRoutes(routeFile)
 	if err != nil {
 		fmt.Println("Error parsing routes:", err)
@@ -50,8 +58,8 @@ func main() {
 	http.HandleFunc("/", getHandler(routes))
 
 	// Start the proxy server
-	fmt.Println("Starting proxy server on :8080")
-	http.ListenAndServe(":8080", nil)
+	fmt.Println("Starting proxy server on :", port)
+	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 
 type RouteOutput struct {

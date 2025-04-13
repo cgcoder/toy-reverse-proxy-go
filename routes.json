@@ -1,12 +1,14 @@
 [
-    {
-        "urlStartsWith": "/console",
-        "redirectHost": "http://localhost:5173",
-        "stripUrlPrefix": "/console"
-    },
-    {
-        "urlStartsWith": "/api",
-        "redirectHost": "http://localhost:5174",
-        "stripUrlPrefix": "/api"
-    }
+  {
+    "urlStartsWith": "/api",
+    "redirectHost": "http://localhost:5174/api"
+  },
+  {
+    "urlStartsWith": "/auth",
+    "redirectHost": "http://localhost:5174/auth"
+  },
+  {
+    "urlStartsWith": "",
+    "redirectHost": "http://localhost:5173"
+  }
 ]
